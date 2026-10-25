@@ -22,26 +22,33 @@ class BooksSpider(scrapy.Spider):
             self,
             response: Response
     ) -> Iterator[dict[str, str | int | float | None]]:
+        title = response.css(".product_main h1::text").get()
+        price = response.css(".product_main .price_color::text").get()
+        stock = response.css(".product_main .availability::text").getall()
+        rating = response.css(
+            ".product_main .star-rating::attr(class)"
+        ).get()
+        category = response.css(".breadcrumb > li")
+        description = response.css("#product_description + p::text").get()
+        upc = response.css(
+            '.table-striped tr:contains("UPC") td::text'
+        ).get()
+
+        stock_words = stock[-1].split() if stock else []
+        rating_words = rating.split() if rating is not None else []
+
         yield {
-            "title": response.css(".product_main h1::text").get(),
-            "price": float(
-                response.css(
-                    ".product_main .price_color::text"
-                ).get().replace("£", "")
+            "title": title,
+            "price": float(price.replace("£", "")) if price is not None else None,
+            "amount_in_stock": (
+                int(stock_words[-2].replace("(", ""))
+                if len(stock_words) >= 2 else None
             ),
-            "amount_in_stock": int(
-                response.css(
-                    ".product_main .availability::text"
-                ).getall()[-1].strip().split()[-2].replace("(", "")
+            "rating": rating_words[1] if len(rating_words) >= 2 else None,
+            "category": (
+                category[-2].css("a::text").get()
+                if len(category) >= 2 else None
             ),
-            "rating": response.css(
-                ".product_main .star-rating::attr(class)"
-            ).get().split()[1],
-            "category": response.css(
-                ".breadcrumb > li"
-            )[-2].css("a::text").get(),
-            "description": response.css(
-                "#product_description + p::text"
-            ).get(),
-            "upc": response.css(".table-striped tr td::text").get()
+            "description": description,
+            "upc": upc
         }
