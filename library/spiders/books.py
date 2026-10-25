@@ -39,7 +39,9 @@ class BooksSpider(scrapy.Spider):
 
         yield {
             "title": title,
-            "price": float(price.replace("£", "")) if price is not None else None,
+            "price": float(
+                price.replace("£", "")
+            ) if price is not None else None,
             "amount_in_stock": (
                 int(stock_words[-2].replace("(", ""))
                 if len(stock_words) >= 2 else None
